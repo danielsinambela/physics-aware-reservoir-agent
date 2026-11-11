@@ -55,6 +55,7 @@ physics-aware-reservoir-agent/
 ├── examples/
 │   ├── run_baseline.py          # homogeneous case vs exact solution
 │   ├── run_pinn.py              # physics-informed neural network baseline
+│   ├── run_heterogeneous_pinn.py # Deep Ritz PINN with heterogeneous rock
 │   ├── heterogeneous_reservoir.py
 │   ├── validate_physics.py      # validation suite over reference cases
 │   └── test_local_llm.py        # query gpt-oss:20b through Ollama
@@ -84,29 +85,40 @@ python -m pip install -e ".[dev]"
 
 ### Physics-informed neural network (optional)
 
-The PINN is a PyTorch model for the homogeneous baseline problem. It learns a
-normalized pressure field by minimizing the steady Darcy PDE residual. The
-prescribed-pressure and no-flow boundaries are built into the network output.
-It is a separate numerical approach from both the finite-volume solver and the
-optional local language model.
+The PyTorch PINN examples are separate numerical approaches from both the
+finite-volume solver and the optional local language model. The homogeneous
+example minimizes the strong-form Darcy PDE residual. The heterogeneous
+example minimizes the weak-form Darcy energy (Deep Ritz method), using
+cell-wise Gauss quadrature so quadrature does not cross permeability
+discontinuities. Both enforce prescribed-pressure and no-flow boundaries in
+the network output.
 
 ```bash
 python -m pip install -e ".[pinn]"
 python examples/run_pinn.py                    # trains and writes outputs/pinn_baseline.png
 python examples/run_pinn.py --steps 5000       # use more Adam optimization steps
+python examples/run_heterogeneous_pinn.py      # synthetic heterogeneous field
+python examples/run_heterogeneous_pinn.py --steps 1000 --quadrature-order 12
 ```
 
-The example compares its prediction against the exact linear solution and the
-finite-volume solution. The first implementation supports **constant
-permeability** on a rectangular domain; heterogeneous permeability and its
-interface conditions are not yet implemented for the PINN.
+The homogeneous example compares its prediction against the exact linear
+solution and the finite-volume solution. The heterogeneous example generates a
+reproducible correlated permeability field with a high-permeability channel and
+compares its predicted pressure and recovered flow with the finite-volume
+solution. The weak formulation represents continuity of pressure and normal
+flux across cell interfaces. Heterogeneous PINN accuracy depends on network
+capacity and quadrature resolution; the finite-volume solution remains the
+reference for checking each run. The example prints pressure, flow, and
+boundary-balance errors and warns when the PINN has not closely matched that
+reference.
 
 ## Usage
 
 ```bash
 python -m pytest tests/ -v                   # run the test suite
 python examples/run_baseline.py              # writes outputs/baseline.png
-python examples/run_pinn.py                 # writes outputs/pinn_baseline.png (requires .[pinn])
+python examples/run_pinn.py                  # homogeneous PINN (requires .[pinn])
+python examples/run_heterogeneous_pinn.py    # heterogeneous PINN (requires .[pinn])
 python examples/heterogeneous_reservoir.py   # writes outputs/heterogeneous_reservoir.png
 python examples/validate_physics.py          # prints the validation report
 python examples/test_local_llm.py            # asks gpt-oss:20b a Darcy-flow question
