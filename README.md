@@ -54,6 +54,7 @@ physics-aware-reservoir-agent/
 │   └── physics_validation.py    # discrete physics checks
 ├── examples/
 │   ├── run_baseline.py          # homogeneous case vs exact solution
+│   ├── run_pinn.py              # physics-informed neural network baseline
 │   ├── heterogeneous_reservoir.py
 │   ├── validate_physics.py      # validation suite over reference cases
 │   └── test_local_llm.py        # query gpt-oss:20b through Ollama
@@ -81,11 +82,31 @@ python -m pip install -e ".[dev]"
    ollama pull gpt-oss:20b
    ```
 
+### Physics-informed neural network (optional)
+
+The PINN is a PyTorch model for the homogeneous baseline problem. It learns a
+normalized pressure field by minimizing the steady Darcy PDE residual. The
+prescribed-pressure and no-flow boundaries are built into the network output.
+It is a separate numerical approach from both the finite-volume solver and the
+optional local language model.
+
+```bash
+python -m pip install -e ".[pinn]"
+python examples/run_pinn.py                    # trains and writes outputs/pinn_baseline.png
+python examples/run_pinn.py --steps 5000       # use more Adam optimization steps
+```
+
+The example compares its prediction against the exact linear solution and the
+finite-volume solution. The first implementation supports **constant
+permeability** on a rectangular domain; heterogeneous permeability and its
+interface conditions are not yet implemented for the PINN.
+
 ## Usage
 
 ```bash
 python -m pytest tests/ -v                   # run the test suite
 python examples/run_baseline.py              # writes outputs/baseline.png
+python examples/run_pinn.py                 # writes outputs/pinn_baseline.png (requires .[pinn])
 python examples/heterogeneous_reservoir.py   # writes outputs/heterogeneous_reservoir.png
 python examples/validate_physics.py          # prints the validation report
 python examples/test_local_llm.py            # asks gpt-oss:20b a Darcy-flow question

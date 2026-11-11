@@ -18,6 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+pinn = ["torch>=2.2"]
 
 [project.urls]
 Repository = "https://github.com/danielsinambela/physics-aware-reservoir-agent"
